@@ -65,9 +65,9 @@ export default function Header() {
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-pulse-grey-light dark:hover:bg-pulse-grey-light transition-colors">
                     <Avatar className="w-8 h-8">
-                      <AvatarImage src={user.avatar} alt={user.name} />
+                      <AvatarImage src={user.profilePicUrl} alt={user.username || "User"} />
                       <AvatarFallback className="bg-pulse-cyan text-white text-xs font-semibold">
-                        {user.name
+                        {(user.username || user.email?.split("@")[0] || "User")
                           .split(" ")
                           .map((n) => n[0])
                           .join("")
@@ -80,7 +80,7 @@ export default function Header() {
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5">
                     <p className="text-sm font-semibold text-pulse-black dark:text-pulse-black">
-                      {user.name}
+                      {user.username}
                     </p>
                     <p className="text-xs text-pulse-black/70 dark:text-pulse-black/80">{user.email}</p>
                   </div>

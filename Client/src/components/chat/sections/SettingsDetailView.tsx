@@ -26,12 +26,17 @@ export default function SettingsDetailView({
     sounds: true,
   });
 
-  const initials = user?.name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) || "U";
+  const getInitials = () => {
+    if (!user) return "U";
+    const name = user.username || user.email?.split("@")[0] || "User";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "U";
+  };
+  const initials = getInitials();
 
   const renderContent = () => {
     switch (settingId) {
@@ -40,7 +45,7 @@ export default function SettingsDetailView({
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
               <Avatar className="w-20 h-20">
-                <AvatarImage src={user?.avatar} alt={user?.name} />
+                <AvatarImage src={user?.profilePicUrl} alt={user?.username || "User"} />
                 <AvatarFallback className="bg-pulse-cyan text-white text-xl font-bold">
                   {initials}
                 </AvatarFallback>
@@ -60,7 +65,7 @@ export default function SettingsDetailView({
                 <Label htmlFor="name" className="text-pulse-black dark:text-pulse-black">Full Name</Label>
                 <Input
                   id="name"
-                  defaultValue={user?.name || ""}
+                  defaultValue={user?.username || ""}
                   className="h-11 bg-white dark:bg-pulse-white border-pulse-grey-subtle dark:border-pulse-grey-subtle text-pulse-black dark:text-pulse-black"
                 />
               </div>

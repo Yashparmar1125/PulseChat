@@ -1,16 +1,28 @@
 // Auth types and interfaces
 
 export interface User {
-  id: string;
+  _id: string;
+  firebaseUid: string;
   email: string;
-  name: string;
-  avatar?: string;
+  username: string;
+  profilePicUrl?: string;
+  statusText?: string;
   createdAt: string;
+  lastActive?: string;
+  lastLogin?: string;
+  privacySettings?: {
+    lastSeen: string;
+    profilePhoto: string;
+    status: string;
+    readReceipts: boolean;
+  };
+  tutorialCompleted?: boolean;
 }
 
 export interface AuthState {
   user: User | null;
-  token: string | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
@@ -42,6 +54,19 @@ export interface ResetPasswordData {
 
 export interface AuthResponse {
   user: User;
-  token: string;
+  accessToken: string;
+  refreshToken: string;
+  message?: string;
+}
+
+export interface RegisterRequest {
+  idToken: string;
+  username?: string;
+  fcmToken?: string;
+}
+
+export interface LoginRequest {
+  idToken: string;
+  fcmToken?: string;
 }
 

@@ -1,26 +1,34 @@
 import { useEffect, useRef } from "react";
 import MessageBubble from "./MessageBubble";
+import TypingIndicator from "./TypingIndicator";
 import type { Message } from "@/types/messages";
 
 interface MessageListProps {
   messages: Message[];
   currentUserId: string;
   isLoading?: boolean;
+  typingUsers?: string[];
 }
 
 export default function MessageList({
   messages,
   currentUserId,
   isLoading = false,
+  typingUsers = [],
 }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Auto-scroll to bottom when new messages arrive
+    // Auto-scroll to bottom when new messages arrive or typing indicator appears
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      // Use requestAnimationFrame for smooth scrolling
+      requestAnimationFrame(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      });
     }
-  }, [messages]);
+  }, [messages, typingUsers]);
 
   if (isLoading && messages.length === 0) {
     return (
@@ -52,8 +60,17 @@ export default function MessageList({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto" ref={scrollRef}>
-      <div className="py-4">
+    <div 
+      className="flex-1 overflow-y-auto bg-gradient-to-b from-pulse-grey-light/40 via-pulse-grey-light/20 to-transparent dark:from-pulse-grey-light/15 dark:via-pulse-grey-light/8 relative" 
+      ref={scrollRef}
+    >
+      <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.03] pointer-events-none"
+        style={{
+          backgroundImage: 'radial-gradient(circle at 2px 2px, hsl(var(--pulse-grey-text)) 1px, transparent 0)',
+          backgroundSize: '24px 24px',
+        }}
+      />
+      <div className="py-4 px-4 relative z-10">
         {messages.map((message, index) => {
           const prevMessage = index > 0 ? messages[index - 1] : null;
           const showAvatar =
@@ -79,6 +96,11 @@ export default function MessageList({
             />
           );
         })}
+        
+        {/* Typing Indicator */}
+        {typingUsers && typingUsers.length > 0 && (
+          <TypingIndicator userIds={typingUsers} />
+        )}
       </div>
     </div>
   );

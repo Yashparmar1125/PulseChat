@@ -57,7 +57,7 @@ const DEMO_CREDENTIALS = {
 
 export default function SignIn() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, socialLogin, resendVerificationEmail } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -66,6 +66,7 @@ export default function SignIn() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showEmailNotVerified, setShowEmailNotVerified] = useState(false);
 
   const handleDemoLogin = async () => {
     setFormData({
@@ -82,8 +83,9 @@ export default function SignIn() {
         password: DEMO_CREDENTIALS.password,
       });
       navigate("/chat");
-    } catch (err) {
-      setError("Failed to login. Please try again.");
+    } catch (err: any) {
+      const errorMessage = err?.message || "Failed to login. Please try again.";
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -105,15 +107,46 @@ export default function SignIn() {
       } else {
         setError("Please enter both email and password.");
       }
-    } catch (err) {
-      setError("Failed to login. Please try again.");
+    } catch (err: any) {
+      let errorMessage = err?.message || "Failed to login. Please try again.";
+      
+      // Check if email is not verified
+      if (err?.emailNotVerified) {
+        setShowEmailNotVerified(true);
+        errorMessage = "Please verify your email address before signing in.";
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleResendVerification = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await resendVerificationEmail();
+      setError("Verification email sent! Please check your inbox.");
+      setShowEmailNotVerified(false);
+    } catch (err: any) {
+      setError(err?.message || "Failed to resend verification email.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSocialLogin = (provider: "google" | "microsoft" | "linkedin") => {
-    console.log(`Logging in with ${provider}`);
+  const handleSocialLogin = async (provider: "google" | "microsoft" | "linkedin") => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      await socialLogin(provider);
+      navigate("/chat");
+    } catch (err: any) {
+      setError(err.message || `Failed to login with ${provider}. Please try again.`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -280,8 +313,29 @@ export default function SignIn() {
             </Alert>
 
             {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertDescription className="text-sm">{error}</AlertDescription>
+              <Alert 
+                variant={showEmailNotVerified ? "default" : "destructive"} 
+                className={`mb-4 ${showEmailNotVerified ? "bg-pulse-cyan/10 border-pulse-cyan/30" : ""}`}
+              >
+                <AlertDescription className="text-sm">
+                  <div className="space-y-2">
+                    <p>{error}</p>
+                    {showEmailNotVerified && (
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleResendVerification}
+                          disabled={isLoading}
+                          className="text-xs border-pulse-cyan text-pulse-cyan hover:bg-pulse-cyan/10"
+                        >
+                          {isLoading ? "Sending..." : "Resend Verification Email"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </AlertDescription>
               </Alert>
             )}
 

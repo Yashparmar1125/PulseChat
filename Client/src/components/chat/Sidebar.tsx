@@ -20,12 +20,21 @@ interface SidebarProps {
 
 export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const { user } = useAuth();
-  const initials = user?.name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) || "U";
+  
+  // Get initials from username or email
+  const getInitials = () => {
+    if (!user) return "U";
+    
+    const name = user.username || user.email?.split("@")[0] || "User";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "U";
+  };
+  
+  const initials = getInitials();
 
   const tabs = [
     { id: "chats", icon: MessageSquare, badge: null },
@@ -51,7 +60,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         aria-label="Profile"
       >
         <Avatar className="w-10 h-10">
-          <AvatarImage src={user?.avatar} alt={user?.name} />
+          <AvatarImage src={user?.profilePicUrl} alt={user?.username || "User"} />
           <AvatarFallback className="bg-pulse-cyan text-white font-semibold text-xs">
             {initials}
           </AvatarFallback>
@@ -89,7 +98,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       {/* Bottom Profile (optional - for consistency with WhatsApp) */}
       <div className="mt-auto">
         <Avatar className="w-10 h-10">
-          <AvatarImage src={user?.avatar} alt={user?.name} />
+          <AvatarImage src={user?.profilePicUrl} alt={user?.username || "User"} />
           <AvatarFallback className="bg-pulse-grey-subtle dark:bg-pulse-grey-subtle text-pulse-black dark:text-pulse-black text-xs">
             {initials}
           </AvatarFallback>

@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Check, CheckCheck, MoreVertical } from "lucide-react";
 import { format } from "date-fns";
 import type { Message } from "@/types/messages";
@@ -18,73 +17,52 @@ export default function MessageBubble({
   showAvatar = true,
   showTimestamp = true,
 }: MessageBubbleProps) {
-  const initials = message.senderName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
 
   const getStatusIcon = () => {
     if (!isCurrentUser) return null;
     
     switch (message.status) {
       case "sending":
-        return <div className="w-3 h-3 border-2 border-pulse-grey-text border-t-transparent rounded-full animate-spin" />;
+        return <div className="w-3 h-3 border-2 border-white/50 border-t-transparent rounded-full animate-spin" />;
       case "sent":
-        return <Check className="w-3 h-3 text-pulse-grey-text" />;
+        return <Check className="w-3.5 h-3.5 text-white/70" />;
       case "delivered":
-        return <CheckCheck className="w-3 h-3 text-pulse-grey-text" />;
+        return <CheckCheck className="w-3.5 h-3.5 text-white/70" />;
       case "read":
-        return <CheckCheck className="w-3 h-3 text-pulse-cyan" />;
+        return <CheckCheck className="w-3.5 h-3.5 text-white" style={{ color: 'hsl(var(--pulse-cyan))' }} />;
       case "failed":
-        return <span className="text-xs text-red-500">!</span>;
+        return <span className="text-xs text-red-400">!</span>;
       default:
-        return null;
+        return <Check className="w-3.5 h-3.5 text-white/70" />;
     }
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
+      initial={{ opacity: 0, y: 10, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
       className={cn(
-        "flex gap-3 px-4 py-2 group hover:bg-pulse-grey-light/30 dark:hover:bg-pulse-grey-light/30 transition-colors",
-        isCurrentUser ? "flex-row-reverse" : "flex-row"
+        "flex gap-2.5 py-1.5 group transition-colors w-full",
+        isCurrentUser ? "justify-end" : "justify-start"
       )}
     >
-      {/* Avatar */}
-      {showAvatar && !isCurrentUser && (
-        <Avatar className="w-8 h-8 flex-shrink-0">
-          <AvatarImage src={message.senderAvatar} alt={message.senderName} />
-          <AvatarFallback className="bg-pulse-grey-subtle dark:bg-pulse-grey-subtle text-pulse-black dark:text-pulse-black text-xs">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
-      )}
 
       {/* Message Content */}
       <div
         className={cn(
-          "flex flex-col gap-1 max-w-[70%]",
-          isCurrentUser ? "items-end" : "items-start"
+          "flex flex-col gap-1",
+          isCurrentUser ? "items-end max-w-[85%] sm:max-w-[75%]" : "items-start max-w-[85%] sm:max-w-[75%]"
         )}
       >
-        {/* Sender Name (only for other users) */}
-        {!isCurrentUser && showAvatar && (
-          <span className="text-xs font-semibold text-pulse-black dark:text-pulse-black px-1">
-            {message.senderName}
-          </span>
-        )}
 
         {/* Message Bubble */}
         <div
           className={cn(
-            "rounded-2xl px-4 py-2.5 relative",
+            "rounded-2xl px-4 py-2.5 relative shadow-sm transition-all duration-200 w-full",
             isCurrentUser
-              ? "bg-pulse-cyan text-white rounded-br-sm shadow-md"
-              : "bg-white dark:bg-pulse-white text-pulse-black dark:text-pulse-black border border-pulse-grey-subtle dark:border-pulse-grey-subtle rounded-bl-sm shadow-sm"
+              ? "bg-gradient-to-br from-pulse-cyan to-pulse-cyan/90 text-white rounded-br-md shadow-lg shadow-pulse-cyan/20"
+              : "bg-white dark:bg-pulse-grey-light text-pulse-black dark:text-pulse-black border border-pulse-grey-subtle/50 dark:border-pulse-grey-subtle/30 rounded-bl-md shadow-md dark:shadow-black/20"
           )}
         >
           {/* Reply Preview */}
@@ -104,7 +82,10 @@ export default function MessageBubble({
 
           {/* Message Text */}
           {message.text && (
-            <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+            <p className={cn(
+              "text-sm leading-relaxed whitespace-pre-wrap break-words",
+              isCurrentUser ? "text-white" : "text-pulse-black dark:text-pulse-black"
+            )}>
               {message.text}
             </p>
           )}
@@ -153,14 +134,18 @@ export default function MessageBubble({
             {showTimestamp && (
               <span
                 className={cn(
-                  "text-[10px]",
-                  isCurrentUser ? "text-white/70" : "text-pulse-grey-text dark:text-pulse-grey-text"
+                  "text-[10px] font-medium",
+                  isCurrentUser ? "text-white/80" : "text-pulse-grey-text dark:text-pulse-grey-text"
                 )}
               >
                 {format(new Date(message.timestamp), "h:mm a")}
               </span>
             )}
-            {isCurrentUser && getStatusIcon()}
+            {isCurrentUser && (
+              <span className="ml-1">
+                {getStatusIcon()}
+              </span>
+            )}
             {message.editedAt && (
               <span
                 className={cn(
@@ -192,15 +177,29 @@ export default function MessageBubble({
         )}
       </div>
 
-      {/* Actions Menu (on hover) */}
-      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-start pt-1">
-        <button
-          className="p-1 rounded hover:bg-pulse-grey-light dark:hover:bg-pulse-grey-light text-pulse-grey-text dark:text-pulse-grey-text hover:text-pulse-black dark:hover:text-pulse-black transition-colors"
-          aria-label="Message options"
-        >
-          <MoreVertical className="w-4 h-4" />
-        </button>
-      </div>
+      {/* Actions Menu (on hover) - only for current user messages */}
+      {isCurrentUser && (
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-start pt-1.5 flex-shrink-0 ml-1">
+          <button
+            className="p-1.5 rounded-lg hover:bg-pulse-grey-light/80 dark:hover:bg-pulse-grey-light/80 text-pulse-grey-text dark:text-pulse-grey-text hover:text-pulse-black dark:hover:text-pulse-black transition-all duration-200"
+            aria-label="Message options"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+      
+      {/* Spacer for received messages to balance layout */}
+      {!isCurrentUser && (
+        <div className="flex-shrink-0 w-10 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            className="p-1.5 rounded-lg hover:bg-pulse-grey-light/80 dark:hover:bg-pulse-grey-light/80 text-pulse-grey-text dark:text-pulse-grey-text hover:text-pulse-black dark:hover:text-pulse-black transition-all duration-200"
+            aria-label="Message options"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </motion.div>
   );
 }

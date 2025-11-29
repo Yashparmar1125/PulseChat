@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/auth";
+import { useNavigate } from "react-router-dom";
 
 interface SettingItem {
   id: string;
@@ -29,6 +30,7 @@ export default function SettingsSection({
   onSettingSelect,
 }: SettingsSectionProps) {
   const { logout } = useAuth();
+  const navigate = useNavigate();
 
   const settings: SettingItem[] = [
     {
@@ -69,9 +71,15 @@ export default function SettingsSection({
     },
   ];
 
-  const handleLogout = () => {
-    logout();
-    window.location.href = "/";
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Navigate anyway to ensure user is redirected
+      navigate("/");
+    }
   };
 
   const handleSettingClick = (settingId: string) => {

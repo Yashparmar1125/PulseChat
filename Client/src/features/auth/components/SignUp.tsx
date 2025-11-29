@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, EyeOff, Lock, Mail, User, Info } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, User } from "lucide-react";
 import Logo from "@/components/layout/Logo";
 import { motion } from "framer-motion";
 import {
@@ -52,7 +52,7 @@ const LinkedInIcon = () => (
 
 export default function SignUp() {
   const navigate = useNavigate();
-  const { signup } = useAuth();
+  const { signup, socialLogin, resendVerificationEmail } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -64,6 +64,8 @@ export default function SignUp() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>("");
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -94,26 +96,54 @@ export default function SignUp() {
     setIsLoading(true);
     
     try {
-      // For wireframing: accept any valid form submission
-      await signup({
+      const result = await signup({
         name: formData.name,
         email: formData.email,
         password: formData.password,
         confirmPassword: formData.confirmPassword,
         acceptTerms: formData.acceptTerms,
       });
-      navigate("/chat");
-    } catch (err) {
-      setErrors({ submit: "Failed to create account. Please try again." });
+      
+      // Check if email verification is needed
+      if (result?.needsVerification) {
+        setUserEmail(formData.email);
+        setShowVerificationMessage(true);
+      } else {
+        navigate("/chat");
+      }
+    } catch (err: any) {
+      const errorMessage = err?.message || "Failed to create account. Please try again.";
+      setErrors({ submit: errorMessage });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleResendVerification = async () => {
+    setIsLoading(true);
+    try {
+      await resendVerificationEmail();
+      setErrors({ submit: "Verification email sent! Please check your inbox." });
+    } catch (err: any) {
+      setErrors({ submit: err?.message || "Failed to resend verification email." });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSocialLogin = (provider: "google" | "microsoft" | "linkedin") => {
-    // Mock social login - replace with actual OAuth implementation
-    console.log(`Signing up with ${provider}`);
-    // In production, redirect to OAuth provider
+
+  
+  const handleSocialLogin = async (provider: "google" | "microsoft" | "linkedin") => {
+    setErrors({});
+    setIsLoading(true);
+    try {
+      await socialLogin(provider);
+      navigate("/chat");
+    } catch (err: any) {
+      setErrors({ submit: err.message || `Failed to sign up with ${provider}. Please try again.` });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -251,7 +281,49 @@ export default function SignUp() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-3.5">
+          {/* Email Verification Message */}
+          {showVerificationMessage && (
+            <Alert className="mb-4 bg-pulse-cyan/10 dark:bg-pulse-cyan/20 border-pulse-cyan/30 dark:border-pulse-cyan/40">
+              <Mail className="h-4 w-4 text-pulse-cyan" />
+              <AlertDescription className="text-sm">
+                <div className="space-y-3">
+                  <p className="font-semibold text-pulse-black dark:text-pulse-black">
+                    Verification Email Sent!
+                  </p>
+                  <p className="text-pulse-black/80 dark:text-pulse-black/80">
+                    We've sent a verification email to <strong>{userEmail}</strong>. 
+                    Please check your inbox and click the verification link to activate your account.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResendVerification}
+                      disabled={isLoading}
+                      className="text-xs border-pulse-cyan text-pulse-cyan hover:bg-pulse-cyan/10"
+                    >
+                      {isLoading ? "Sending..." : "Resend Email"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowVerificationMessage(false);
+                        navigate("/auth/signin");
+                      }}
+                      className="text-xs"
+                    >
+                      Go to Sign In
+                    </Button>
+                  </div>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-3.5" style={{ display: showVerificationMessage ? 'none' : 'block' }}>
             {/* Name Field */}
             <div className="space-y-1.5">
               <Label htmlFor="name" className="text-sm text-pulse-black dark:text-pulse-black">

@@ -1,80 +1,57 @@
 // src/libs/mongoClient.js
-import { MongoClient } from "mongodb";
 
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017";
-const DB_NAME = process.env.MONGO_DB || "PulseChat";
+import { MongoClient } from 'mongodb';
+import config from '../config/index.js'; // Use the config from step 1
 
-let client = null;
-let db = null;
+const uri = config.MONGO_URI;
+const dbName = config.MONGO_DB_NAME;
 
+// Create a single instance of the client and database connection
+let client;
+let db;
+
+/**
+ * Establishes the connection to MongoDB.
+ */
 export async function connectMongo() {
-  if (db) return db;
-
+  if (db) {
+    console.log('MongoDB is already connected.');
+    return db;
+  }
+  
   try {
-    console.log("[MONGO] Starting connection…");
-
-    client = new MongoClient(MONGO_URI, {
-      maxPoolSize: 20,
-      writeConcern: { w: "majority" },
-    });
-
+    console.log('Attempting to connect to MongoDB...');
+    client = new MongoClient(uri);
     await client.connect();
-    console.log("[MONGO] Connected to server");
-
-    db = client.db(DB_NAME);
-
-    await ensureIndexes(db);
-
-    console.log(`[MONGO] Database ready (${DB_NAME})`);
+    db = client.db(dbName);
+    console.log(`MongoDB Connected successfully to database: ${dbName}`);
     return db;
   } catch (err) {
-    console.error("[MONGO INIT ERROR]");
-    console.error(err);
-    throw err;
+    console.error('MongoDB connection error:', err);
+    // Re-throw the error to be caught by the startup function in server.js
+    throw err; 
   }
 }
 
-export function getDb() {
-  if (!db) throw new Error("Mongo is not connected. Call connectMongo() first.");
-  return db;
-}
-
+/**
+ * Closes the MongoDB connection gracefully.
+ */
 export async function closeMongo() {
   if (client) {
     await client.close();
+    console.log('MongoDB connection closed.');
     client = null;
     db = null;
   }
 }
 
-async function ensureIndexes(db) {
-  try {
-    console.log("[MONGO] Ensuring indexes…");
-
-    // messages: compound index for pagination by conversation (latest first)
-    await db.collection("messages").createIndex({ conversationId: 1, seqNo: -1 });
-
-    // messages: index on createdAt for admin queries / TTL-like sorting
-    await db.collection("messages").createIndex({ createdAt: -1 });
-
-    // presence TTL index — create only if server is running as a replica set
-    try {
-      // This will throw if not a replset
-      await db.admin().command({ replSetGetStatus: 1 });
-      // If we reach here, it's a replica set — create TTL index
-      await db.collection("presence").createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 });
-      console.log("[MONGO] TTL index created for 'presence.expireAt' (replica set detected)");
-    } catch (e) {
-      console.warn("[MONGO] Skipping TTL index (no replica set detected)");
-    }
-
-    // counters collection: do not try to create an _id index (Mongo creates it automatically).
-    // If you need additional indexes for counters, create them here. For now, keep counters simple.
-    // Example (commented): await db.collection('counters').createIndex({ someField: 1 }, { unique: true });
-
-    console.log("[MONGO] Indexes ensured");
-  } catch (err) {
-    console.error("[MONGO INDEX ERROR]");
-    console.error(err);
+/**
+ * Retrieves the current database instance.
+ * @returns {object} The MongoDB database instance.
+ */
+export function getDb() {
+  if (!db) {
+    throw new Error('Database not connected. Call connectMongo() first.');
   }
+  return db;
 }

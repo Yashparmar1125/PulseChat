@@ -10,6 +10,7 @@ import { SignIn, SignUp, ForgotPassword } from "./features/auth";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
+import VerifyEmail from "./pages/VerifyEmail";
 
 const App = () => (
   <ThemeProvider>
@@ -25,6 +26,7 @@ const App = () => (
     <Route path="/auth/signin" element={<SignIn />} />
     <Route path="/auth/signup" element={<SignUp />} />
     <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+    <Route path="/auth/verify-email" element={<VerifyEmail />} />
     
     {/* Protected Routes */}
     <Route

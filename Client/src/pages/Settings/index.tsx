@@ -28,12 +28,17 @@ export default function Settings() {
     sounds: true,
   });
 
-  const initials = user?.name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) || "U";
+  const getInitials = () => {
+    if (!user) return "U";
+    const name = user.username || user.email?.split("@")[0] || "User";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "U";
+  };
+  const initials = getInitials();
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -77,7 +82,7 @@ export default function Settings() {
 
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-6">
                 <Avatar className="w-20 h-20">
-                  <AvatarImage src={user?.avatar} alt={user?.name} />
+                  <AvatarImage src={user?.profilePicUrl} alt={user?.username || "User"} />
                   <AvatarFallback className="bg-pulse-cyan text-white text-xl font-bold">
                     {initials}
                   </AvatarFallback>
@@ -97,7 +102,7 @@ export default function Settings() {
                   <Label htmlFor="name">Full Name</Label>
                   <Input
                     id="name"
-                    defaultValue={user?.name || ""}
+                    defaultValue={user?.username || ""}
                     className="h-11"
                   />
                 </div>

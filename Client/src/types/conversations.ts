@@ -12,6 +12,7 @@ export interface Conversation {
   participants: Participant[];
   updatedAt: string;
   createdAt: string;
+  typingUsers?: string[]; // User IDs who are currently typing
 }
 
 export interface MessagePreview {
