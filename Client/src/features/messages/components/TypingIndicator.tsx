@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -5,7 +6,12 @@ interface TypingIndicatorProps {
   userIds: string[];
 }
 
-export default function TypingIndicator({ userIds }: TypingIndicatorProps) {
+function TypingIndicator({ userIds }: TypingIndicatorProps) {
+  // Don't render if no users typing
+  if (!userIds || userIds.length === 0) {
+    return null;
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -25,6 +31,31 @@ export default function TypingIndicator({ userIds }: TypingIndicatorProps) {
     </motion.div>
   );
 }
+
+// Memoize to prevent unnecessary re-renders when props haven't changed
+export default memo(TypingIndicator, (prevProps, nextProps) => {
+  // Only re-render if the typing users actually changed
+  if (prevProps.userIds.length !== nextProps.userIds.length) {
+    return false; // Props changed, re-render
+  }
+  
+  // Check if the user IDs are the same
+  const prevIds = new Set(prevProps.userIds);
+  const nextIds = new Set(nextProps.userIds);
+  
+  if (prevIds.size !== nextIds.size) {
+    return false; // Different number of users, re-render
+  }
+  
+  // Check if all IDs are the same
+  for (const id of prevIds) {
+    if (!nextIds.has(id)) {
+      return false; // Different users, re-render
+    }
+  }
+  
+  return true; // Same props, skip re-render
+});
 
 
 

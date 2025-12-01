@@ -1,7 +1,14 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Pin, CheckCheck } from "lucide-react";
+import { Pin, CheckCheck, MoreVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { Conversation } from "@/types/conversations";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -10,13 +17,30 @@ interface ConversationCardProps {
   conversation: Conversation;
   isSelected: boolean;
   onClick: () => void;
+  onPin?: (conversationId: string, pinned: boolean) => void;
 }
 
 export default function ConversationCard({
   conversation,
   isSelected,
   onClick,
+  onPin,
 }: ConversationCardProps) {
+  const [isPinning, setIsPinning] = useState(false);
+
+  const handlePinToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+    if (!onPin || isPinning) return;
+    
+    setIsPinning(true);
+    try {
+      await onPin(conversation.id, !conversation.isPinned);
+    } catch (error) {
+      console.error("Failed to toggle pin:", error);
+    } finally {
+      setIsPinning(false);
+    }
+  };
   const getInitials = (name: string) => {
     if (!name || name === 'Unknown' || name === 'Unnamed Conversation') {
       return 'U';
@@ -35,7 +59,7 @@ export default function ConversationCard({
       whileHover={{ backgroundColor: "hsl(var(--pulse-grey-light))" }}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        "p-3.5 cursor-pointer transition-all duration-200 border-l-4",
+        "p-3.5 cursor-pointer transition-all duration-200 border-l-4 relative group",
         isSelected 
           ? "bg-pulse-grey-light dark:bg-pulse-grey-light border-l-pulse-cyan shadow-sm" 
           : "hover:bg-pulse-grey-light/60 dark:hover:bg-pulse-grey-light/60 border-l-transparent hover:border-l-pulse-cyan/30"
@@ -85,6 +109,33 @@ export default function ConversationCard({
                   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
                 })()}
               </span>
+            )}
+            {/* Pin/More Menu Button */}
+            {onPin && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    onClick={(e) => e.stopPropagation()}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-pulse-grey-subtle dark:hover:bg-pulse-grey-subtle"
+                    aria-label="More options"
+                  >
+                    <MoreVertical className="w-4 h-4 text-pulse-grey-text dark:text-pulse-grey-text" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem
+                    onClick={handlePinToggle}
+                    disabled={isPinning}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <Pin className={cn(
+                      "w-4 h-4",
+                      conversation.isPinned ? "text-pulse-cyan" : "text-pulse-grey-text"
+                    )} />
+                    <span>{conversation.isPinned ? "Unpin Conversation" : "Pin Conversation"}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
             </div>
           </div>

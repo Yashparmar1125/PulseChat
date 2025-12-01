@@ -303,6 +303,18 @@ export function useMessages(conversationId: string | null) {
           if (dataConvId === currentConvId && dataUserId !== currentUserId) {
             console.log(`[useMessages] User ${dataUserId} is ${data.isTyping ? "typing" : "not typing"}`);
             setTypingUsers((prev) => {
+              // Only update if the state actually changes
+              const hasUser = prev.has(dataUserId);
+              if (data.isTyping && hasUser) {
+                // Already in set, no change needed
+                return prev;
+              }
+              if (!data.isTyping && !hasUser) {
+                // Not in set and removing, no change needed
+                return prev;
+              }
+              
+              // State will change, create new Set
               const updated = new Set(prev);
               if (data.isTyping) {
                 updated.add(dataUserId);
@@ -364,7 +376,9 @@ export function useMessages(conversationId: string | null) {
   }, [conversationId, user?._id]); // Only re-run when conversation or user changes
 
   const sendMessage = useCallback(async (payload: SendMessagePayload) => {
-    if (!conversationId || !payload.text?.trim()) return;
+    if (!conversationId) return;
+    // Allow sending messages with just attachments (no text)
+    if (!payload.text?.trim() && (!payload.attachments || payload.attachments.length === 0)) return;
 
     const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const userIdStr = user?._id?.toString() || user?._id || "";
@@ -375,7 +389,7 @@ export function useMessages(conversationId: string | null) {
       senderId: userIdStr,
       senderName: user?.username || user?.email || "You",
       senderAvatar: user?.profilePicUrl,
-      text: payload.text.trim(),
+      text: payload.text?.trim() || undefined,
       type: payload.type || "text",
       timestamp: new Date().toISOString(),
       readBy: [userIdStr],
@@ -410,7 +424,7 @@ export function useMessages(conversationId: string | null) {
         // Try WebSocket first
         const response = await sendMessageViaSocket(socket, {
           conversationId,
-          body: payload.text.trim(),
+          body: payload.text?.trim() || "",
           type: payload.type || "text",
           attachments: payload.attachments || [],
           tempId,
@@ -440,7 +454,7 @@ export function useMessages(conversationId: string | null) {
         console.log("[sendMessage] 📤 WebSocket not connected, using REST API fallback...");
         // Fallback to HTTP API
         const response = await messagesApi.sendMessage(conversationId, {
-          text: payload.text.trim(),
+          text: payload.text?.trim() || "",
           type: payload.type || "text",
           replyToId: payload.replyToId,
           attachments: payload.attachments || [],

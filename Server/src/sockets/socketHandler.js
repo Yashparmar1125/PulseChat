@@ -8,6 +8,7 @@ import {
   import { createMessage } from '../services/message.service.js';
   import { getDb } from '../libs/mongoClient.js';
   import { USER_COLLECTION } from '../models/user.model.js';
+  import { CONVERSATION_COLLECTION } from '../models/conversation.model.js';
   import { ObjectId } from 'mongodb';
   import { formatMessage } from '../utils/response.formatter.js';
   

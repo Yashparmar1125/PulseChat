@@ -6,21 +6,23 @@ import {
     uploadFile,
     getFile,
     deleteFile,
+    serveFile,
 } from '../controllers/media.controller.js';
 
 const router = express.Router();
 
-// All routes require authentication
-router.use(authMiddleware);
+// Upload file (no multer - using formidable directly) - requires auth
+router.post('/upload', authMiddleware, uploadFile);
 
-// Upload file (no multer - using formidable directly)
-router.post('/upload', uploadFile);
+// Serve file - public access (files are already protected by unique IDs)
+// This route should be before the /:fileId route to avoid conflicts
+router.get('/file/:fileId', serveFile);
 
-// Get file metadata
-router.get('/:fileId', getFile);
+// Get file metadata - requires auth
+router.get('/:fileId', authMiddleware, getFile);
 
-// Delete file
-router.delete('/:fileId', deleteFile);
+// Delete file - requires auth
+router.delete('/:fileId', authMiddleware, deleteFile);
 
 export default router;
 

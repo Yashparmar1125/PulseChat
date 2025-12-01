@@ -13,6 +13,7 @@ interface ChatListPanelProps {
   onCreateConversation?: () => void;
   activeFilter?: string;
   onFilterChange?: (filter: string) => void;
+  onPin?: (conversationId: string, pinned: boolean) => void;
 }
 
 export default function ChatListPanel({
@@ -22,6 +23,7 @@ export default function ChatListPanel({
   onCreateConversation,
   activeFilter = "all",
   onFilterChange,
+  onPin,
 }: ChatListPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -32,23 +34,33 @@ export default function ChatListPanel({
     { id: "groups", label: "Groups" },
   ];
 
-  const filteredConversations = conversations.filter((conv) => {
-    const matchesSearch = conv.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    
-    if (activeFilter === "unread") {
-      return matchesSearch && conv.unreadCount > 0;
-    }
-    if (activeFilter === "groups") {
-      return matchesSearch && conv.isGroup;
-    }
-    if (activeFilter === "favourites") {
-      // For wireframing, assume pinned = favourites
-      return matchesSearch && conv.isPinned;
-    }
-    return matchesSearch;
-  });
+  const filteredConversations = conversations
+    .filter((conv) => {
+      const matchesSearch = conv.name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      
+      if (activeFilter === "unread") {
+        return matchesSearch && conv.unreadCount > 0;
+      }
+      if (activeFilter === "groups") {
+        return matchesSearch && conv.isGroup;
+      }
+      if (activeFilter === "favourites") {
+        // For wireframing, assume pinned = favourites
+        return matchesSearch && conv.isPinned;
+      }
+      return matchesSearch;
+    })
+    .sort((a, b) => {
+      // Sort: pinned first, then by updatedAt
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      // Both pinned or both unpinned - sort by updatedAt
+      const dateA = new Date(a.updatedAt).getTime();
+      const dateB = new Date(b.updatedAt).getTime();
+      return dateB - dateA; // Most recent first
+    });
 
   return (
     <div className="w-80 lg:w-96 flex flex-col bg-pulse-grey-light dark:bg-pulse-grey-light border-r border-pulse-grey-subtle dark:border-pulse-grey-subtle">
@@ -126,6 +138,7 @@ export default function ChatListPanel({
                 conversation={conversation}
                 isSelected={conversation.id === selectedConversationId}
                 onClick={() => onSelectConversation(conversation.id)}
+                onPin={onPin}
               />
             ))}
           </div>

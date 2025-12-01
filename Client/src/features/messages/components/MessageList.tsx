@@ -18,17 +18,35 @@ export default function MessageList({
 }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Track previous message count to only scroll on new messages
+  const prevMessageCountRef = useRef(messages.length);
+  const prevScrollHeightRef = useRef(0);
+
   useEffect(() => {
-    // Auto-scroll to bottom when new messages arrive or typing indicator appears
+    // Only auto-scroll when new messages are added, not on typing updates
     if (scrollRef.current) {
-      // Use requestAnimationFrame for smooth scrolling
-      requestAnimationFrame(() => {
-        if (scrollRef.current) {
-          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-      });
+      const currentMessageCount = messages.length;
+      const currentScrollHeight = scrollRef.current.scrollHeight;
+      
+      // Only scroll if:
+      // 1. New messages were added (count increased)
+      // 2. OR scroll height changed significantly (new content)
+      const hasNewMessages = currentMessageCount > prevMessageCountRef.current;
+      const scrollHeightChanged = Math.abs(currentScrollHeight - prevScrollHeightRef.current) > 50;
+      
+      if (hasNewMessages || scrollHeightChanged) {
+        // Use requestAnimationFrame for smooth scrolling
+        requestAnimationFrame(() => {
+          if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+          }
+        });
+      }
+      
+      prevMessageCountRef.current = currentMessageCount;
+      prevScrollHeightRef.current = currentScrollHeight;
     }
-  }, [messages, typingUsers]);
+  }, [messages]); // Removed typingUsers from dependencies
 
   if (isLoading && messages.length === 0) {
     return (
@@ -97,10 +115,8 @@ export default function MessageList({
           );
         })}
         
-        {/* Typing Indicator */}
-        {typingUsers && typingUsers.length > 0 && (
-          <TypingIndicator userIds={typingUsers} />
-        )}
+        {/* Typing Indicator - Memoized to prevent re-renders */}
+        <TypingIndicator userIds={typingUsers || []} />
       </div>
     </div>
   );

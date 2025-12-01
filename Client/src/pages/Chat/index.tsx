@@ -30,7 +30,7 @@ import { getSocket } from "@/services/websocket/ws-client";
 
 export default function Chat() {
   const { user } = useAuth();
-  const { conversations, isLoading: conversationsLoading, refetch: refetchConversations } = useConversations();
+  const { conversations, isLoading: conversationsLoading, refetch: refetchConversations, pinConversation } = useConversations();
   const [activeTab, setActiveTab] = useState("chats");
   const [activeFilter, setActiveFilter] = useState("all");
   const [selectedConversationId, setSelectedConversationId] = useState<
@@ -125,12 +125,23 @@ export default function Chat() {
       })
     : false;
 
-  const handleSendMessage = (text: string) => {
+  const handleSendMessage = (text?: string, attachments?: Omit<import("@/types/messages").MessageAttachment, "id">[]) => {
     if (selectedConversationId) {
+      // Determine message type based on attachments
+      let messageType: "text" | "image" | "file" | "audio" | "video" = "text";
+      if (attachments && attachments.length > 0) {
+        const firstAttachment = attachments[0];
+        if (firstAttachment.type === "image") messageType = "image";
+        else if (firstAttachment.type === "video") messageType = "video";
+        else if (firstAttachment.type === "audio") messageType = "audio";
+        else messageType = "file";
+      }
+      
       sendMessage({
         conversationId: selectedConversationId,
-        text,
-        type: "text",
+        text: text || "",
+        type: messageType,
+        attachments,
       });
     }
   };
@@ -155,6 +166,7 @@ export default function Chat() {
             onCreateConversation={() => setIsNewChatModalOpen(true)}
             activeFilter={activeFilter}
             onFilterChange={setActiveFilter}
+            onPin={pinConversation}
           />
         </div>
       ) : activeTab === "calls" || activeTab === "status" || activeTab === "communities" || activeTab === "starred" ? (

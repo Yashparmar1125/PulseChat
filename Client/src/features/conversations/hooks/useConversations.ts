@@ -232,6 +232,35 @@ export function useConversations() {
             }
           }
         };
+
+        // Listen for pin updates
+        const handlePinUpdate = (data: { conversationId: string; userId: string; pinned: boolean }) => {
+          const dataConvId = data.conversationId?.toString();
+          const dataUserId = data.userId?.toString() || data.userId;
+          
+          // Only update if it's the current user's pin action (pinning is per-user)
+          if (dataUserId !== userIdStr) {
+            console.log("[useConversations] 📌 Pin update received for different user, ignoring");
+            return;
+          }
+          
+          console.log("[useConversations] 📌 Pin update received:", {
+            conversationId: dataConvId,
+            userId: dataUserId,
+            pinned: data.pinned
+          });
+          
+          // Update conversation pin status in real-time
+          setConversations((prev) =>
+            prev.map((conv) => {
+              const convId = conv.id?.toString() || conv.id;
+              if (convId === dataConvId) {
+                return { ...conv, isPinned: data.pinned };
+              }
+              return conv;
+            })
+          );
+        };
         
         // Also listen for global conversation:message events (for conversation list updates)
         const handleConversationMessage = (data: { conversationId: string; message: Message; timestamp: string }) => {
@@ -251,13 +280,17 @@ export function useConversations() {
         };
 
         // Set up all event listeners
+        // NOTE: We ONLY listen to conversation:message (not message) because:
+        // - message events are only sent to conversation rooms (when user has conversation open)
+        // - conversation:message events are sent to user rooms (works for all participants)
+        // This ensures users get real-time updates even when they don't have the conversation open
         console.log("[useConversations] Setting up event listeners...");
-        socket.on("message", handleNewMessage);
         socket.on("conversation:message", handleConversationMessage);
         socket.on("message_read", handleReadReceipt);
         socket.on("conversation:read", handleConversationRead);
         socket.on("presence:update", handlePresence);
         socket.on("conversation:update", handleConversationUpdate);
+        socket.on("conversation:pin", handlePinUpdate);
         socket.on("typing", handleTyping);
         
         console.log("[useConversations] ✅ All event listeners registered");
@@ -265,12 +298,12 @@ export function useConversations() {
         cleanup = () => {
           console.log("[useConversations] Cleaning up event listeners...");
           if (socket) {
-            socket.off("message", handleNewMessage);
             socket.off("conversation:message", handleConversationMessage);
             socket.off("message_read", handleReadReceipt);
             socket.off("conversation:read", handleConversationRead);
             socket.off("presence:update", handlePresence);
             socket.off("conversation:update", handleConversationUpdate);
+            socket.off("conversation:pin", handlePinUpdate);
             socket.off("typing", handleTyping);
             console.log("[useConversations] ✅ Event listeners removed");
           }
@@ -291,6 +324,28 @@ export function useConversations() {
     fetchConversations();
   }, [fetchConversations]);
 
+  // Pin/Unpin conversation
+  const pinConversation = useCallback(async (conversationId: string, pinned: boolean) => {
+    try {
+      const { conversationsApi } = await import("../api");
+      await conversationsApi.pinConversation(conversationId, { pinned });
+      
+      // Optimistically update local state
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === conversationId
+            ? { ...conv, isPinned: pinned }
+            : conv
+        )
+      );
+    } catch (error) {
+      console.error("Error pinning conversation:", error);
+      // Refetch on error to sync state
+      fetchConversations();
+      throw error;
+    }
+  }, [fetchConversations]);
+
   // Merge typing status into conversations
   const conversationsWithTyping = conversations.map(conv => ({
     ...conv,
@@ -302,6 +357,7 @@ export function useConversations() {
     isLoading,
     error,
     refetch,
+    pinConversation,
   };
 }
 

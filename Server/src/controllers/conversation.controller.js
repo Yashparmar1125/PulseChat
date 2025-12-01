@@ -375,6 +375,24 @@ export const pinConversation = async (req, res) => {
                 { $set: { pinnedBy, updatedAt: new Date() } }
             );
 
+        // Broadcast pin update via WebSocket if available
+        if (ioInstance) {
+            try {
+                // Emit to all conversation participants
+                const participantIds = conversation.participants.map(p => p.toString());
+                participantIds.forEach(participantId => {
+                    ioInstance.to(`user:${participantId}`).emit('conversation:pin', {
+                        conversationId: conversationId,
+                        userId: userId,
+                        pinned: pinned
+                    });
+                });
+                console.log('[pinConversation] Broadcasted pin update to participants:', participantIds);
+            } catch (wsError) {
+                console.error('[pinConversation] Error broadcasting via WebSocket:', wsError);
+            }
+        }
+
         res.json({ message: pinned ? 'Conversation pinned' : 'Conversation unpinned' });
     } catch (error) {
         console.error('Error pinning conversation:', error);
