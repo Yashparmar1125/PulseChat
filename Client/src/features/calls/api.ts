@@ -9,6 +9,7 @@ export interface CallLog {
   duration: number;
   startedAt: string;
   endedAt?: string;
+  startedBy?: string;
   participants: Array<{
     id: string;
     username: string;

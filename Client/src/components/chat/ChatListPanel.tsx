@@ -14,6 +14,16 @@ interface ChatListPanelProps {
   activeFilter?: string;
   onFilterChange?: (filter: string) => void;
   onPin?: (conversationId: string, pinned: boolean) => void;
+  /**
+   * When true, the panel will stretch to fill available width
+   * instead of using the fixed desktop widths. Useful for mobile.
+   */
+  fullWidth?: boolean;
+  /**
+   * Optional: hide the large "Chats" title row (useful on mobile when
+   * there's already a global app header).
+   */
+  showTitle?: boolean;
 }
 
 export default function ChatListPanel({
@@ -24,6 +34,8 @@ export default function ChatListPanel({
   activeFilter = "all",
   onFilterChange,
   onPin,
+  fullWidth = false,
+  showTitle = true,
 }: ChatListPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -63,21 +75,30 @@ export default function ChatListPanel({
     });
 
   return (
-    <div className="w-80 lg:w-96 flex flex-col bg-pulse-grey-light dark:bg-pulse-grey-light border-r border-pulse-grey-subtle dark:border-pulse-grey-subtle">
+    <div
+      className={cn(
+        "flex flex-col bg-pulse-grey-light dark:bg-pulse-grey-light border-r border-pulse-grey-subtle dark:border-pulse-grey-subtle",
+        fullWidth ? "w-full" : "w-80 lg:w-96 flex-shrink-0"
+      )}
+    >
       {/* Header */}
       <div className="p-4 bg-white dark:bg-pulse-white border-b border-pulse-grey-subtle dark:border-pulse-grey-subtle">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-pulse-black dark:text-pulse-black">Chats</h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9"
-            onClick={onCreateConversation}
-            aria-label="New chat"
-          >
-            <Plus className="w-5 h-5" />
-          </Button>
-        </div>
+        {showTitle && (
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-pulse-black dark:text-pulse-black">
+              Chats
+            </h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+              onClick={onCreateConversation}
+              aria-label="New chat"
+            >
+              <Plus className="w-5 h-5" />
+            </Button>
+          </div>
+        )}
 
         {/* Search Bar */}
         <div className="relative">

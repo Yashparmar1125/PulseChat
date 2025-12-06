@@ -46,8 +46,9 @@ export const getCallLogs = async (req, res) => {
                 type: log.type,
                 status: log.status,
                 duration: log.duration || 0,
-                startedAt: log.startedAt.toISOString(),
-                endedAt: log.endedAt?.toISOString(),
+                startedAt: log.startedAt?.toISOString?.() || log.startTime?.toISOString?.(),
+                endedAt: log.endedAt?.toISOString?.() || log.endTime?.toISOString?.(),
+                startedBy: log.startedBy || log.initiatorId?.toString?.(),
                 participants: otherParticipants.map(p => ({
                     id: p._id.toString(),
                     username: p.username,

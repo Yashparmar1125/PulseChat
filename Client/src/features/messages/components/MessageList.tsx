@@ -8,6 +8,8 @@ interface MessageListProps {
   currentUserId: string;
   isLoading?: boolean;
   typingUsers?: string[];
+  highlightMessageId?: string;
+  onHighlightComplete?: () => void;
 }
 
 export default function MessageList({
@@ -15,6 +17,8 @@ export default function MessageList({
   currentUserId,
   isLoading = false,
   typingUsers = [],
+  highlightMessageId,
+  onHighlightComplete,
 }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -47,6 +51,21 @@ export default function MessageList({
       prevScrollHeightRef.current = currentScrollHeight;
     }
   }, [messages]); // Removed typingUsers from dependencies
+
+  // Scroll to highlighted message
+  useEffect(() => {
+    if (!highlightMessageId || !scrollRef.current) return;
+    const node = scrollRef.current.querySelector<HTMLElement>(
+      `[data-message-id="${highlightMessageId}"]`
+    );
+    if (node) {
+      node.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (onHighlightComplete) {
+        const timeout = setTimeout(onHighlightComplete, 1600);
+        return () => clearTimeout(timeout);
+      }
+    }
+  }, [highlightMessageId, onHighlightComplete]);
 
   if (isLoading && messages.length === 0) {
     return (
@@ -105,13 +124,15 @@ export default function MessageList({
               300000; // 5 minutes
 
           return (
-            <MessageBubble
-              key={message.id}
-              message={message}
-              isCurrentUser={message.senderId === currentUserId}
-              showAvatar={showAvatar}
-              showTimestamp={showTimestamp}
-            />
+            <div key={message.id} data-message-id={message.id}>
+              <MessageBubble
+                message={message}
+                isCurrentUser={message.senderId === currentUserId}
+                showAvatar={showAvatar}
+                showTimestamp={showTimestamp}
+                isHighlighted={highlightMessageId === message.id}
+              />
+            </div>
           );
         })}
         

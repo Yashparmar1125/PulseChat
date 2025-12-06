@@ -6,6 +6,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import NewCommunityModal from "../modals/NewCommunityModal";
 import CommunityDetailPanel from "./CommunityDetailPanel";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Community {
   id: string;
@@ -44,6 +45,7 @@ const mockCommunities: Community[] = [
 export default function CommunitiesSection() {
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
   const [isNewCommunityModalOpen, setIsNewCommunityModalOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const handleCommunityClick = (community: Community) => {
     setSelectedCommunity(community);
@@ -54,11 +56,10 @@ export default function CommunitiesSection() {
     // Here you would implement the actual community creation logic
   };
 
-  return (
-    <>
-      <div className="flex flex-1 h-full w-full">
-        {/* Left Pane - Communities List */}
-        <div className="w-80 lg:w-96 flex flex-col bg-white dark:bg-pulse-white border-r border-pulse-grey-subtle dark:border-pulse-grey-subtle">
+  const listPane = (
+    <div
+      className={`${isMobile ? "w-full" : "w-80 lg:w-96 border-r"} flex flex-col bg-white dark:bg-pulse-white border-pulse-grey-subtle dark:border-pulse-grey-subtle`}
+    >
           {/* Header */}
           <div className="p-4 bg-white dark:bg-pulse-white border-b border-pulse-grey-subtle dark:border-pulse-grey-subtle">
             <div className="flex items-center justify-between mb-4">
@@ -168,7 +169,39 @@ export default function CommunitiesSection() {
               </div>
             )}
           </div>
+    </div>
+  );
+
+  // Mobile: show list or detail as single column
+  if (isMobile) {
+    return (
+      <>
+        <div className="flex flex-1 h-full w-full">
+          {selectedCommunity ? (
+            <CommunityDetailPanel
+              key={selectedCommunity.id}
+              community={selectedCommunity}
+              onClose={() => setSelectedCommunity(null)}
+            />
+          ) : (
+            listPane
+          )}
         </div>
+        <NewCommunityModal
+          isOpen={isNewCommunityModalOpen}
+          onClose={() => setIsNewCommunityModalOpen(false)}
+          onCreateCommunity={handleCreateCommunity}
+        />
+      </>
+    );
+  }
+
+  // Desktop: split list + detail
+  return (
+    <>
+      <div className="flex flex-1 h-full w-full">
+        {/* Left Pane - Communities List */}
+        {listPane}
 
         {/* Right Pane - Community Detail or Info */}
         <AnimatePresence mode="wait">
@@ -190,9 +223,9 @@ export default function CommunitiesSection() {
               <div className="max-w-md w-full text-center">
                 {/* Community SVG Illustration */}
                 <div className="w-56 h-56 mx-auto mb-6">
-                  <img 
-                    src="/assets/svg/community.svg" 
-                    alt="Communities" 
+                  <img
+                    src="/assets/svg/community.svg"
+                    alt="Communities"
                     className="w-full h-full object-contain opacity-90 dark:opacity-80"
                   />
                 </div>

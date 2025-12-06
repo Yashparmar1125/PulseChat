@@ -1,4 +1,4 @@
-import { X, Video, Phone, User } from "lucide-react";
+import { Video, Phone, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { usersApi, type SearchUsersResponse } from "@/features/users/api";
 
 interface NewCallModalProps {
   isOpen: boolean;
@@ -18,14 +19,6 @@ interface NewCallModalProps {
   callType: "video" | "voice" | null;
   onStartCall: (type: "video" | "voice", contactId?: string) => void;
 }
-
-// Mock contacts for quick selection
-const mockContacts = [
-  { id: "1", name: "Kittu", emoji: "😈", avatar: undefined },
-  { id: "2", name: "Sarah Johnson", initials: "SJ", avatar: undefined },
-  { id: "3", name: "Mike Chen", initials: "MC", avatar: undefined },
-  { id: "4", name: "Alex", initials: "A", avatar: undefined },
-];
 
 export default function NewCallModal({
   isOpen,
@@ -35,10 +28,26 @@ export default function NewCallModal({
 }: NewCallModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
+  const [results, setResults] = useState<SearchUsersResponse["users"]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const filteredContacts = mockContacts.filter((contact) =>
-    contact.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleSearch = async (value: string) => {
+    setSearchQuery(value);
+    setSelectedContact(null);
+    if (!value.trim()) {
+      setResults([]);
+      return;
+    }
+    try {
+      setIsSearching(true);
+      const res = await usersApi.searchUsers(value, 20);
+      setResults(res.users);
+    } catch (error) {
+      console.error("User search failed", error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const handleStartCall = () => {
     if (callType && selectedContact) {
@@ -46,6 +55,7 @@ export default function NewCallModal({
       onClose();
       setSelectedContact(null);
       setSearchQuery("");
+      setResults([]);
     }
   };
 
@@ -68,7 +78,7 @@ export default function NewCallModal({
               type="text"
               placeholder="Search contacts..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
               className="pl-10 h-11 bg-white dark:bg-pulse-white border-pulse-grey-subtle dark:border-pulse-grey-subtle"
             />
             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-pulse-grey-text dark:text-pulse-grey-text" />
@@ -77,7 +87,16 @@ export default function NewCallModal({
           {/* Contact List */}
           <div className="max-h-64 overflow-y-auto space-y-2">
             <AnimatePresence>
-              {filteredContacts.length === 0 ? (
+              {isSearching ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-center py-8 text-pulse-grey-text dark:text-pulse-grey-text"
+                >
+                  Searching...
+                </motion.div>
+              ) : results.length === 0 && searchQuery ? (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -87,8 +106,8 @@ export default function NewCallModal({
                   No contacts found
                 </motion.div>
               ) : (
-                filteredContacts.map((contact) => {
-                  const initials = contact.initials || contact.name
+                results.map((contact) => {
+                  const initials = contact.username
                     .split(" ")
                     .map((n) => n[0])
                     .join("")
@@ -108,14 +127,15 @@ export default function NewCallModal({
                           : "bg-pulse-grey-light dark:bg-pulse-grey-light hover:bg-pulse-grey-subtle dark:hover:bg-pulse-grey-subtle border-2 border-transparent"
                       }`}
                     >
-                      <Avatar className="w-10 h-10">
-                        <AvatarFallback className="bg-pulse-cyan text-white font-semibold text-sm">
-                          {contact.emoji || initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium text-pulse-black dark:text-pulse-black text-sm">
-                        {contact.name} {contact.emoji}
-                      </span>
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={contact.profilePicUrl} alt={contact.username} />
+                          <AvatarFallback className="bg-pulse-cyan text-white font-semibold text-sm">
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium text-pulse-black dark:text-pulse-black text-sm">
+                          {contact.username}
+                        </span>
                     </motion.button>
                   );
                 })

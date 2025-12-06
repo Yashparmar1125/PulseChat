@@ -6,6 +6,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import NewStatusModal from "../modals/NewStatusModal";
 import StatusDetailPanel from "./StatusDetailPanel";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Status {
   id: string;
@@ -74,6 +75,7 @@ const formatStatusTime = (timestamp: string | number) => {
 export default function StatusSection() {
   const [selectedStatus, setSelectedStatus] = useState<Status | null>(null);
   const [isNewStatusModalOpen, setIsNewStatusModalOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const myStatus = mockStatuses.find((s) => s.isMyStatus);
   const recentStatuses = mockStatuses.filter((s) => !s.isMyStatus);
@@ -87,11 +89,10 @@ export default function StatusSection() {
     // Here you would implement the actual status posting logic
   };
 
-  return (
-    <>
-      <div className="flex flex-1 h-full w-full">
-        {/* Left Pane - Status List */}
-        <div className="w-80 lg:w-96 flex flex-col bg-white dark:bg-pulse-white border-r border-pulse-grey-subtle dark:border-pulse-grey-subtle">
+  const listPane = (
+    <div
+      className={`${isMobile ? "w-full" : "w-80 lg:w-96 border-r"} flex flex-col bg-white dark:bg-pulse-white border-pulse-grey-subtle dark:border-pulse-grey-subtle`}
+    >
           {/* Header */}
           <div className="p-4 bg-white dark:bg-pulse-white border-b border-pulse-grey-subtle dark:border-pulse-grey-subtle">
             <div className="flex items-center justify-between mb-4">
@@ -224,12 +225,48 @@ export default function StatusSection() {
               )}
             </div>
           </div>
+    </div>
+  );
+
+  // Mobile: single-column, show either list or detail
+  if (isMobile) {
+    return (
+      <>
+        <div className="flex flex-1 h-full w-full">
+          {selectedStatus ? (
+            <StatusDetailPanel
+              key={selectedStatus.id}
+              status={selectedStatus}
+              onClose={() => setSelectedStatus(null)}
+            />
+          ) : (
+            listPane
+          )}
         </div>
+        <NewStatusModal
+          isOpen={isNewStatusModalOpen}
+          onClose={() => setIsNewStatusModalOpen(false)}
+          onPostStatus={handlePostStatus}
+        />
+      </>
+    );
+  }
+
+  // Desktop: split list + detail
+  return (
+    <>
+      <div className="flex flex-1 h-full w-full">
+        {/* Left Pane - Status List */}
+        {listPane}
 
         {/* Right Pane - Status Detail or Prompt */}
         <AnimatePresence mode="wait">
           {selectedStatus ? (
-            <StatusDetailPanel key={selectedStatus.id} status={selectedStatus} onClose={() => setSelectedStatus(null)} />
+            <StatusDetailPanel
+              key={selectedStatus.id}
+              status={selectedStatus}
+              onClose={() => setSelectedStatus(null)}
+            />
           ) : (
             <motion.div
               key="status-prompt"
@@ -242,9 +279,9 @@ export default function StatusSection() {
               <div className="max-w-md w-full text-center">
                 {/* Status SVG Illustration */}
                 <div className="w-56 h-56 mx-auto mb-6">
-                  <img 
-                    src="/assets/svg/status.svg" 
-                    alt="Status" 
+                  <img
+                    src="/assets/svg/status.svg"
+                    alt="Status"
                     className="w-full h-full object-contain opacity-90 dark:opacity-80"
                   />
                 </div>

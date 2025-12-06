@@ -11,6 +11,7 @@ interface MessageBubbleProps {
   isCurrentUser: boolean;
   showAvatar?: boolean;
   showTimestamp?: boolean;
+  isHighlighted?: boolean;
 }
 
 export default function MessageBubble({
@@ -18,6 +19,7 @@ export default function MessageBubble({
   isCurrentUser,
   showAvatar = true,
   showTimestamp = true,
+  isHighlighted = false,
 }: MessageBubbleProps) {
   const [selectedAttachment, setSelectedAttachment] = useState<string | null>(null);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
@@ -88,17 +90,18 @@ export default function MessageBubble({
       <div
         className={cn(
           "flex flex-col gap-1",
-          isCurrentUser ? "items-end max-w-[85%] sm:max-w-[75%]" : "items-start max-w-[85%] sm:max-w-[75%]"
+          isCurrentUser ? "items-end max-w-[82%] sm:max-w-[70%]" : "items-start max-w-[82%] sm:max-w-[70%]"
         )}
       >
 
         {/* Message Bubble */}
         <div
           className={cn(
-            "rounded-2xl px-4 py-2.5 relative shadow-sm transition-all duration-200 w-full",
+            "inline-flex flex-col rounded-2xl px-3.5 py-2 relative shadow-sm transition-all duration-200",
             isCurrentUser
               ? "bg-gradient-to-br from-pulse-cyan to-pulse-cyan/90 text-white rounded-br-md shadow-lg shadow-pulse-cyan/20"
-              : "bg-white dark:bg-pulse-grey-light text-pulse-black dark:text-pulse-black border border-pulse-grey-subtle/50 dark:border-pulse-grey-subtle/30 rounded-bl-md shadow-md dark:shadow-black/20"
+              : "bg-white dark:bg-pulse-grey-light text-pulse-black dark:text-pulse-black border border-pulse-grey-subtle/50 dark:border-pulse-grey-subtle/30 rounded-bl-md shadow-md dark:shadow-black/20",
+            isHighlighted && "ring-2 ring-pulse-cyan/70 shadow-pulse-cyan/40"
           )}
         >
           {/* Reply Preview */}
@@ -213,39 +216,36 @@ export default function MessageBubble({
             </div>
           )}
 
-          {/* Message Footer */}
-          <div
-            className={cn(
-              "flex items-center gap-1.5 mt-1.5",
-              isCurrentUser ? "justify-end" : "justify-start"
-            )}
-          >
-            {showTimestamp && (
-              <span
-                className={cn(
-                  "text-[10px] font-medium",
-                  isCurrentUser ? "text-white/80" : "text-pulse-grey-text dark:text-pulse-grey-text"
-                )}
-              >
-                {format(new Date(message.timestamp), "h:mm a")}
-              </span>
-            )}
-            {isCurrentUser && (
-              <span className="ml-1">
-                {getStatusIcon()}
-              </span>
-            )}
-            {message.editedAt && (
-              <span
-                className={cn(
-                  "text-[10px] italic",
-                  isCurrentUser ? "text-white/70" : "text-pulse-grey-text dark:text-pulse-grey-text"
-                )}
-              >
-                edited
-              </span>
-            )}
-          </div>
+          {/* Message Footer – time + status inside bubble, aligned bottom-right */}
+          {(showTimestamp || isCurrentUser || message.editedAt) && (
+            <div className="flex items-center gap-1 mt-1 self-end">
+              {showTimestamp && (
+                <span
+                  className={cn(
+                    "text-[10px] font-medium",
+                    isCurrentUser ? "text-white/80" : "text-pulse-grey-text dark:text-pulse-grey-text"
+                  )}
+                >
+                  {format(new Date(message.timestamp), "h:mm a")}
+                </span>
+              )}
+              {isCurrentUser && (
+                <span className="ml-0.5 flex items-center justify-center">
+                  {getStatusIcon()}
+                </span>
+              )}
+              {message.editedAt && (
+                <span
+                  className={cn(
+                    "text-[10px] italic",
+                    isCurrentUser ? "text-white/70" : "text-pulse-grey-text dark:text-pulse-grey-text"
+                  )}
+                >
+                  edited
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Reactions */}

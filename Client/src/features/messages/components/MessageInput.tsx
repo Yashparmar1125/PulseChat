@@ -362,7 +362,7 @@ export default function MessageInput({
   }, []);
 
   return (
-    <div className="border-t border-pulse-grey-subtle/50 dark:border-pulse-grey-subtle/30 bg-white/95 dark:bg-pulse-white/95 backdrop-blur-sm dark:backdrop-blur-sm p-4 shadow-lg shadow-black/5 dark:shadow-black/20 relative z-10">
+    <div className="border-t border-pulse-grey-subtle/50 dark:border-pulse-grey-subtle/30 bg-white/95 dark:bg-pulse-white/95 backdrop-blur-sm dark:backdrop-blur-sm p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] shadow-lg shadow-black/5 dark:shadow-black/20 relative z-10">
       <div className="flex items-end gap-2.5">
         {/* Hidden File Inputs */}
         <input
